@@ -1,5 +1,6 @@
 export type { Where } from './commands'
 export type { ErrorResponse } from './error'
+export type { SocketData } from './socket'
 
 export type LlanaRequestType = 'LIST' | 'GET' | 'CREATE' | 'UPDATE' | 'DELETE'
 

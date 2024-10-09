@@ -1,5 +1,6 @@
 import { defineNuxtPlugin } from '#app';
-import type { DeletedResponse, ListResponse, LlanaRequestType, Where } from './types/index'
+import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
+import { io } from "socket.io-client";
 
 export type { ListResponse, ErrorResponse, Where } from './types/index'
 export { defaultList } from './defaults/index'
@@ -142,6 +143,48 @@ export default defineNuxtPlugin(({ $config }) => {
 			}
 		}
 	}
+
+	async function Subscribe(table: string, callbackInsert?: Function, callbackUpdate?: Function, callbackDelete?: Function): Promise<void> {
+		const socket = io(LLANA_INSTANCE_URL, {
+			reconnection: true,
+			extraHeaders: {
+				Authorization: 'Bearer ' + useCookie<Partial<string>>(LLANA_TOKEN_KEY).value,
+				_llana_table: table,
+			},
+			auth: {
+				token: useCookie<Partial<string>>(LLANA_TOKEN_KEY).value,
+			}
+		}) 
+		try{
+			socket.on('connect', () => {
+				console.debug(`Subscribed to Llana Instance ${table}: ${socket.id}` )
+			})
+			socket.on(table, (data: SocketData) => {
+				console.debug(`New WS Message: ${socket.id}`, {
+					table,
+					...data
+				})
+				switch (data.type) {
+					case 'INSERT':
+						callbackInsert ? callbackInsert(data): null
+						break
+					case 'UPDATE':
+						callbackUpdate ? callbackUpdate(data): null
+						break
+					case 'DELETE':
+						callbackDelete ? callbackDelete(data): null
+						break
+				}
+			})
+			socket.on('disconnect', () => {
+				console.debug(`Unsubscribed to Llana Instance ${table}: ${socket.id}` )
+			})
+
+		}catch(e: any){
+			console.error(e)
+			socket.off(table)
+		}
+	}
 	
 	/**
 	 * Gets the users profile
@@ -180,6 +223,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			llanaLogin: Login,
 			llanaLogout: Logout,
 			llanaGetProfile: GetProfile,
+			llanaSubscribe: Subscribe,
 			llanaInstanceUrl: LLANA_INSTANCE_URL,
 			llanaAccessToken: useCookie<Partial<string>>(LLANA_TOKEN_KEY).value,
 		}
