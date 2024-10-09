@@ -8,15 +8,12 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	const LLANA_INSTANCE_URL = $config.public.LLANA_INSTANCE_URL
 	const LLANA_TOKEN_KEY = '_llana_access_token'
-
-	function GetAccessToken(): string {
-		return useCookie<string>(LLANA_TOKEN_KEY).value
-	}
+	const LLANA_ACCESS_TOKEN = useCookie<string>(LLANA_TOKEN_KEY).value
 
 	async function run<T>(options: {
 		type: LlanaRequestType
 		table: string
-		id?: string
+		id?: string | number
 		data?: T | Partial<T>
 		relations?: string
 		where?: Where[]
@@ -29,7 +26,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		let fetchOptions = {
 			method: 'GET',
 			headers: {
-				Authorization: 'Bearer ' + GetAccessToken(),
+				Authorization: 'Bearer ' + LLANA_ACCESS_TOKEN,
 				'Content-Type': 'application/json',
 			}
 		}
@@ -131,8 +128,6 @@ export default defineNuxtPlugin(({ $config }) => {
 				body: creds,
 			}
 	
-			//TODO: type the response
-	
 			const response = <any>await $fetch(LLANA_INSTANCE_URL + '/auth/login', <any>fetchConfig)
 	
 			useCookie<Partial<string>>(LLANA_TOKEN_KEY).value = response.access_token
@@ -183,11 +178,11 @@ export default defineNuxtPlugin(({ $config }) => {
 	return {
 		provide: {
 			llana: run,
-			llanaAccessToken: GetAccessToken,
 			llanaLogin: Login,
 			llanaLogout: Logout,
 			llanaGetProfile: GetProfile,
 			llanaInstanceUrl: LLANA_INSTANCE_URL,
+			llanaAccessToken: LLANA_ACCESS_TOKEN,
 		}
 	  }
 })
