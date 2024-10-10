@@ -173,7 +173,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			reconnection: true,
 			extraHeaders: {
 				Authorization: 'Bearer ' + useCookie<Partial<string>>(LLANA_TOKEN_KEY).value,
-				_llana_table: table,
+				'x-llana-table': table,
 			},
 			auth: {
 				token: useCookie<Partial<string>>(LLANA_TOKEN_KEY).value,
