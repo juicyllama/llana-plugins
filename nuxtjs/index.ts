@@ -119,7 +119,11 @@ export default defineNuxtPlugin(({ $config }) => {
 					throw new Error('No ID provided for get')
 				}
 	
-				url = `/${options.table}/${options.id}`
+				url = `/${options.table}/${options.id}?`
+
+				if (options.relations && options.relations != null) {
+					url += `relations=${options.relations}&`
+				}
 	
 				fetchOptions.method = 'GET'
 
