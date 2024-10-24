@@ -259,7 +259,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	function setToken(token?: string | undefined): void {
 		if (process.client) {
-			useCookie<Partial<string|undefined>>(LLANA_TOKEN_KEY).value = token
+			useCookie<Partial<string | undefined>>(LLANA_TOKEN_KEY, {
+				secure: true,
+				sameSite: 'strict',
+				httpOnly: true,
+			}).value = token
 		}
 	}
 
