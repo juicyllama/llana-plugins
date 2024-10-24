@@ -1,6 +1,6 @@
 {
 	"name": "@juicyllama/llana-plugins-nuxtjs",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "NuxtJs Plugin for Llana.",
 	"tags": [
 		"llana",
