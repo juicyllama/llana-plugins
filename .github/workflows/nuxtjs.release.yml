@@ -48,12 +48,12 @@ jobs:
                 with:
                     major-wording: 'JLMAJOR'
                     minor-wording: 'feature,feat'
-                    patch-wording: 'patch,fixes,fix,misc,docs,refactor'    # Providing patch-wording will override commits
+                    patch-wording: 'patch,fixes,fix,misc,docs,refactor'
                     commit-message: 'Release Package: Llana NuxtJs Plugin Bump Version [skip ci]'
                     skip-tag: true
 
             -   name: 'Authenticate with NPM'
-                run: echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+                run: cd nuxtjs/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
 
             -   name: 'Publishing package'
                 run: cd nuxtjs/ && npm publish --no-git-checks --access public
