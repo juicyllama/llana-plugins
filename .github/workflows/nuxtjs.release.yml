@@ -37,9 +37,6 @@ jobs:
                 with:
                     node-version: 18.18.2
 
-            -   name: 'Install dependencies'
-                run: npm install
-
             -   run: git stash
             -   run: git pull --force
 
