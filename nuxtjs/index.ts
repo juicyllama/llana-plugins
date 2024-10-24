@@ -245,8 +245,10 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	function Logout(): void {
 		if (LLANA_DEBUG) console.log(`Llana Logging out`)
-		setToken(undefined)
-		navigateTo('/login', { replace: true })
+		if (process.client) {
+			setToken(undefined)
+			navigateTo('/login', { replace: true })
+		}
 	}
 
 	function getToken(): string | null {
