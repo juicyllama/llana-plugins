@@ -1,7 +1,7 @@
 import { defineNuxtPlugin } from '#app'
 import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
 import { io } from 'socket.io-client'
-import VueCookies from 'vue-cookies'
+import { VueCookies } from 'vue-cookies'
 
 export type { ListResponse, ErrorResponse, Where } from './types/index'
 export { defaultList } from './defaults/index'
@@ -251,16 +251,16 @@ export default defineNuxtPlugin(({ $config }) => {
 	}
 
 	function getToken(): string {
-		return VueCookies.VueCookies.get(LLANA_TOKEN_KEY)
+		return VueCookies.get(LLANA_TOKEN_KEY)
 	}
 
 	function setToken(token?: string | undefined): void {
 		if (!token) {
-			VueCookies.VueCookies.remove(LLANA_TOKEN_KEY)
+			VueCookies.remove(LLANA_TOKEN_KEY)
 			return
 		}
 
-		VueCookies.VueCookies.set(LLANA_TOKEN_KEY, token, '1d', undefined, undefined, true, 'strict')
+		VueCookies.set(LLANA_TOKEN_KEY, token, '1d', undefined, undefined, true, 'strict')
 		return
 	}
 
