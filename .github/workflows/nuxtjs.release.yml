@@ -18,7 +18,8 @@ on:
     workflow_dispatch:
 
 jobs:
-	release:
+
+    release:
         name: 'Release Package: NuxtJs'
         runs-on: ubuntu-latest
         permissions:
