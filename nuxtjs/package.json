@@ -1,0 +1,40 @@
+{
+	"name": "@juicyllama/llana-plugins-nuxtjs",
+	"version": "0.0.1",
+	"description": "NuxtJs Plugin for Llana.",
+	"tags": [
+		"llana",
+		"nuxtjs",
+		"plugin"
+	],
+	"author": {
+		"name": "JuicyLlama Studio",
+		"email": "studio@juicyllama.com",
+		"url": "https://juicyllama.com"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/juicyllama/llana-plugins"
+	},
+	"bugs": "https://github.com/juicyllama/llana-plugins/issues",
+	"license": "BSD-4-Clause",
+	"scripts": {
+		"precommit": "npm run lint && npm run format",
+		"commit": "git pull && git add . && git commit -m \"chore: update\" && git push"
+	},
+	"prettier": {
+		"singleQuote": true,
+		"trailingComma": "all",
+		"tabWidth": 4,
+		"useTabs": true,
+		"semi": false,
+		"printWidth": 120,
+		"arrowParens": "avoid",
+		"bracketSpacing": true,
+		"bracketSameLine": true
+	}
+}

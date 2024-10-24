@@ -1,0 +1,61 @@
+#
+# GitHub Actions workflow.
+#
+# Releases the package to npm when a push into main is detected.
+# * Bump version number
+# * Release to NPM
+#
+
+name: 'Release Package: NuxtJs'
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - 'nuxtjs/**'
+            - '.github/workflows/nuxtjs.release.yml'
+    workflow_dispatch:
+
+jobs:
+	release:
+        name: 'Release Package: NuxtJs'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            -   name: 'Checkout'
+                uses: actions/checkout@v4
+                with:
+                    token: ${{ secrets.GH_CI_CD_RELEASE }}
+                    sparse-checkout: |
+                        nuxtjs
+
+            -   name: 'Install Node.js'
+                uses: actions/setup-node@v4
+                with:
+                    node-version: 18.18.2
+
+            -   name: 'Install dependencies'
+                run: npm install
+
+            -   run: git stash
+            -   run: git pull --force
+
+            -   name: 'Version Bump'
+                uses: phips28/gh-action-bump-version@master
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GH_CI_CD_RELEASE }}
+                    PACKAGEJSON_DIR: nuxtjs
+                with:
+                    major-wording: 'JLMAJOR'
+                    minor-wording: 'feature,feat'
+                    patch-wording: 'patch,fixes,fix,misc,docs,refactor'    # Providing patch-wording will override commits
+                    commit-message: 'Release Package: Llana NuxtJs Plugin Bump Version [skip ci]'
+                    skip-tag: true
+
+            -   name: 'Authenticate with NPM'
+                run: echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+
+            -   name: 'Publishing package'
+                run: cd nuxtjs/ && npm publish --no-git-checks --access public
