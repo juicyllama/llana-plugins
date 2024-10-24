@@ -250,17 +250,17 @@ export default defineNuxtPlugin(({ $config }) => {
 		navigateTo('/login', { replace: true })
 	}
 
-	function getToken(): string {
-		return VueCookies.get(LLANA_TOKEN_KEY)
+	function getToken(): string | null {
+		return localStorage.getItem(LLANA_TOKEN_KEY)
 	}
 
 	function setToken(token?: string | undefined): void {
 		if (!token) {
-			VueCookies.remove(LLANA_TOKEN_KEY)
+			localStorage.removeItem(LLANA_TOKEN_KEY)
 			return
 		}
 
-		VueCookies.set(LLANA_TOKEN_KEY, token, '1d', undefined, undefined, true, 'strict')
+		localStorage.setItem(LLANA_TOKEN_KEY, token)
 		return
 	}
 
