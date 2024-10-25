@@ -22,6 +22,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		page?: string
 		sort?: string
 	}): Promise<ListResponse<T> | T | DeletedResponse> {
+
 		let url: string
 		let fetchOptions = {
 			method: 'GET',
@@ -245,28 +246,19 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	function Logout(): void {
 		if (LLANA_DEBUG) console.log(`Llana Logging out`)
-		if (process.client) {
-			setToken(undefined)
-			navigateTo('/login', { replace: true })
-		}
+		setToken(undefined)
+		navigateTo('/login', { replace: true })
 	}
 
 	function getToken(): string | null {
-		if (process.client) {
-			return useCookie<Partial<string>>(LLANA_TOKEN_KEY).value
-		}
-
-		return null
+		return useCookie<Partial<string>>(LLANA_TOKEN_KEY).value
 	}
 
 	function setToken(token?: string | undefined): void {
-		if (process.client) {
 			useCookie<Partial<string | undefined>>(LLANA_TOKEN_KEY, {
-				secure: true,
-				sameSite: 'strict',
-				httpOnly: true,
+				secure: !import.meta.dev,
+				sameSite: 'strict'
 			}).value = token
-		}
 	}
 
 	return {
