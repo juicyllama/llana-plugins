@@ -1,6 +1,6 @@
 {
 	"name": "@juicyllama/llana-plugins-nuxtjs",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "NuxtJs Plugin for Llana.",
 	"tags": [
 		"llana",
@@ -22,7 +22,7 @@
 	},
 	"bugs": "https://github.com/juicyllama/llana-plugins/issues",
 	"license": "BSD-4-Clause",
-  "type": "module",
+	"type": "module",
 	"scripts": {
 		"prepack": "nuxt-module-build build",
 		"dev": "nuxi dev playground",
