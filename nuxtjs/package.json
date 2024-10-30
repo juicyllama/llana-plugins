@@ -22,6 +22,7 @@
 	},
 	"bugs": "https://github.com/juicyllama/llana-plugins/issues",
 	"license": "BSD-4-Clause",
+  "type": "module",
 	"scripts": {
 		"prepack": "nuxt-module-build build",
 		"dev": "nuxi dev playground",
