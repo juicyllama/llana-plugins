@@ -39,9 +39,6 @@ jobs:
                 with:
                     node-version: 20
 
-            -   name: Install dependencies
-                run: cd nuxtjs/ && npx nypm@latest i && cd ..
-
             -   name: 'Version Bump'
                 uses: phips28/gh-action-bump-version@master
                 env:
@@ -54,8 +51,14 @@ jobs:
                     commit-message: 'Release Package: Llana NuxtJs Plugin Bump Version [skip ci]'
                     skip-tag: true
 
+            -   name: Install dependencies
+                run: cd nuxtjs/ && npx nypm@latest i && cd ..
+
+            -   name: 'Pull version'
+                run: cd nuxtjs/ && git pull && cd ..
+
             -   name: 'Authenticate with NPM'
                 run: cd nuxtjs/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
 
             -   name: 'Publishing package'
-                run: cd nuxtjs/ && npm run dev:prepare && npm run prepack && npm publish --no-git-checks --access public && cd ..
+                run: cd nuxtjs/ && npm run dev:prepare && npm run prepack && npm publish && cd ..
