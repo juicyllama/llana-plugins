@@ -35,7 +35,7 @@ jobs:
             -   name: 'Install Node.js'
                 uses: actions/setup-node@v4
                 with:
-                    node-version: 18.18.2
+                    node-version: 20
 
             -   run: git stash
             -   run: git pull --force
@@ -56,4 +56,4 @@ jobs:
                 run: cd nuxtjs/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
 
             -   name: 'Publishing package'
-                run: cd nuxtjs/ && npm publish --no-git-checks --access public
+                run: cd nuxtjs/ && npm run prepack && npm publish --no-git-checks --access public

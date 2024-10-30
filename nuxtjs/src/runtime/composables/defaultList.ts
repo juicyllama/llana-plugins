@@ -1,6 +1,4 @@
-import type { ListResponse } from '../types'
-
-export function defaultList<T>(): ListResponse<T> {
+export function defaultList() {
 	return {
 		limit: 0,
 		offset: 0,

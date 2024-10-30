@@ -1,14 +1,11 @@
-import { defineNuxtPlugin } from '#app'
-import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
 import { io } from 'socket.io-client'
-
-export type { ListResponse, ErrorResponse, Where } from './types/index'
-export { defaultList } from './defaults/index'
+import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
+import { defineNuxtPlugin, useCookie, navigateTo } from '#imports'
 
 export default defineNuxtPlugin(({ $config }) => {
-	const LLANA_INSTANCE_URL = $config.public.LLANA_INSTANCE_URL
+	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
 	const LLANA_DEBUG = <boolean>Boolean($config.public.LLANA_DEBUG)
-	const LLANA_TOKEN_KEY = '_llana_access_token'
+	const LLANA_TOKEN_KEY = <string>$config.LLANA_TOKEN_KEY
 
 	async function run<T>(options: {
 		type: LlanaRequestType
@@ -22,9 +19,8 @@ export default defineNuxtPlugin(({ $config }) => {
 		page?: string
 		sort?: string
 	}): Promise<ListResponse<T> | T | DeletedResponse> {
-
 		let url: string
-		let fetchOptions = {
+		const fetchOptions: any = {
 			method: 'GET',
 			headers: {
 				Authorization: 'Bearer ' + getToken(),
@@ -255,10 +251,10 @@ export default defineNuxtPlugin(({ $config }) => {
 	}
 
 	function setToken(token?: string | undefined): void {
-			useCookie<Partial<string | undefined>>(LLANA_TOKEN_KEY, {
-				secure: !import.meta.dev,
-				sameSite: 'strict'
-			}).value = token
+		useCookie<Partial<string | undefined>>(LLANA_TOKEN_KEY, {
+			secure: !import.meta.dev,
+			sameSite: 'strict',
+		}).value = token
 	}
 
 	return {
