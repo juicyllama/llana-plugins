@@ -40,10 +40,7 @@ jobs:
                     node-version: 20
 
             -   name: Install dependencies
-                run: npx nypm@latest i
-
-            -   run: git stash
-            -   run: git pull --force
+                run: cd nuxtjs/ && npx nypm@latest i && cd ..
 
             -   name: 'Version Bump'
                 uses: phips28/gh-action-bump-version@master
@@ -61,4 +58,4 @@ jobs:
                 run: cd nuxtjs/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
 
             -   name: 'Publishing package'
-                run: cd nuxtjs/ && npm run dev:prepare && npm run prepack && npm publish --no-git-checks --access public
+                run: cd nuxtjs/ && npm run dev:prepare && npm run prepack && npm publish --no-git-checks --access public && cd ..
