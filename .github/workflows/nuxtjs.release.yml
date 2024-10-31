@@ -61,4 +61,4 @@ jobs:
                 run: cd nuxtjs/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
 
             -   name: 'Publishing package'
-                run: cd nuxtjs/ && npm run dev:prepare && npm run prepack && npm publish && cd ..
+                run: cd nuxtjs/ && npm run build && npm publish && cd ..

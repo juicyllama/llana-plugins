@@ -147,7 +147,6 @@ export default defineNuxtPlugin(({ $config }) => {
 		if (LLANA_DEBUG) console.dir(response)
 		return response
 
-
 	}
 
 	async function Login(creds: { username: string; password: string }): Promise<{
@@ -249,10 +248,19 @@ export default defineNuxtPlugin(({ $config }) => {
 
 			if (LLANA_DEBUG) console.log(`Running Llana Request: '/auth/profile'`)
 
-			return <T>await (<any>await $fetch(LLANA_INSTANCE_URL + '/auth/profile', <any>fetchConfig))
+			const result = <T>await (<any>await $fetch(LLANA_INSTANCE_URL + '/auth/profile', <any>fetchConfig))
+
+      		if (LLANA_DEBUG) console.dir(result)
+
+        	return result
+
 		} catch (e: any) {
 			if (e.response?.status === 401) {
-				Logout()
+        if (LLANA_DEBUG) {
+            console.error('Unauthorized - Skipping logout redirect as in debug mode')
+        }else{
+          Logout()
+        }
 			} else {
 				console.error(e)
 			}
@@ -271,7 +279,6 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	function setToken(token?: string | undefined): void {
 		useCookie<Partial<string | undefined>>(LLANA_TOKEN_KEY, {
-			secure: !import.meta.dev,
 			sameSite: 'strict',
 		}).value = token
 	}
