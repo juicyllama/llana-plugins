@@ -28,6 +28,8 @@ export default defineNuxtPlugin(({ $config }) => {
 			},
 		}
 
+		let response: any
+
 		switch (options.type) {
 			case 'LIST':
 				url = `/${options.table}/?`
@@ -62,7 +64,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				return (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
+
+				if (LLANA_DEBUG) console.dir(response)
+
+				return response
 
 			case 'CREATE':
 				url = `/${options.table}/`
@@ -76,7 +82,9 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				return (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+
+				break
 
 			case 'UPDATE':
 				if (!options.data) {
@@ -94,7 +102,9 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				return (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+
+				break
 
 			case 'DELETE':
 				if (!options.id) {
@@ -107,7 +117,9 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				return (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
+
+				break
 
 			case 'GET':
 				if (!options.id) {
@@ -124,11 +136,18 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				return (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+
+				break
 
 			default:
 				throw new Error('Invalid request type')
 		}
+
+		if (LLANA_DEBUG) console.dir(response)
+		return response
+
+
 	}
 
 	async function Login(creds: { username: string; password: string }): Promise<{
