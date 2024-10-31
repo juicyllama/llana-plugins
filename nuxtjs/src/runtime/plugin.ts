@@ -5,7 +5,7 @@ import { defineNuxtPlugin, useCookie, navigateTo } from '#imports'
 export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
 	const LLANA_DEBUG = <boolean>Boolean($config.public.LLANA_DEBUG)
-	const LLANA_TOKEN_KEY = <string>$config.LLANA_TOKEN_KEY
+	const LLANA_TOKEN_KEY = 'llana_access_token'
 
 	async function run<T>(options: {
 		type: LlanaRequestType
