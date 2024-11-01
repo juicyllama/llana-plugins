@@ -64,11 +64,13 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
+				}catch(e){
+					handleResponseError(e)
+				}
 
-				if (LLANA_DEBUG) console.dir(response)
-
-				return response
+				break
 
 			case 'CREATE':
 				url = `/${options.table}/`
@@ -82,7 +84,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				} catch(e){
+					handleResponseError(e)
+				}
 
 				break
 
@@ -102,7 +108,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				} catch(e){
+					handleResponseError(e)
+				}
 
 				break
 
@@ -117,7 +127,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
+				} catch(e){
+					handleResponseError(e)
+				}
 
 				break
 
@@ -136,7 +150,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				} catch(e){
+					handleResponseError(e)
+				}
 
 				break
 
@@ -255,15 +273,7 @@ export default defineNuxtPlugin(({ $config }) => {
         	return result
 
 		} catch (e: any) {
-			if (e.response?.status === 401) {
-        if (LLANA_DEBUG) {
-            console.error('Unauthorized - Skipping logout redirect as in debug mode')
-        }else{
-          Logout()
-        }
-			} else {
-				console.error(e)
-			}
+			handleResponseError(e)
 		}
 	}
 
@@ -281,6 +291,25 @@ export default defineNuxtPlugin(({ $config }) => {
 		useCookie<Partial<string | undefined>>(LLANA_TOKEN_KEY, {
 			sameSite: 'strict',
 		}).value = token
+	}
+
+	function handleResponseError(e: any){
+		if (LLANA_DEBUG) {
+			if (e.response?.status === 401) {
+				console.error('Unauthorized - Skipping logout redirect as in debug mode')
+			}else if (e.response?.status === 403) {
+				console.error('Forbidden - Skipping logout redirect as in debug mode')
+			} else {
+				console.error(e)
+			}
+			return
+		}
+
+		console.error(e)
+
+		if (e.response?.status === 401 || e.response?.status === 403) {
+			Logout()
+		}
 	}
 
 	return {
