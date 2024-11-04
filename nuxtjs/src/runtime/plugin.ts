@@ -294,17 +294,6 @@ export default defineNuxtPlugin(({ $config }) => {
 	}
 
 	function handleResponseError(e: any){
-		if (LLANA_DEBUG) {
-			if (e.response?.status === 401) {
-				console.error('Unauthorized - Skipping logout redirect as in debug mode')
-			}else if (e.response?.status === 403) {
-				console.error('Forbidden - Skipping logout redirect as in debug mode')
-			} else {
-				console.error(e)
-			}
-			return
-		}
-
 		console.error(e)
 
 		if (e.response?.status === 401 || e.response?.status === 403) {
