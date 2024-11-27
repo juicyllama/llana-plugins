@@ -19,15 +19,17 @@ export async function apiRequest(
 ): Promise<any> {
 	const authenticationMethod = <string>this.getNodeParameter('authentication', 0);
 
-    let credentials;
+	let credentialType;
 
     if (authenticationMethod === 'apiKey') {
-        credentials = await this.getCredentials('llanaKeyApi');
+        credentialType = 'llanaKeyApi';
     } else if (authenticationMethod === 'userPass') {
-        credentials = await this.getCredentials('llanaAuthApi');
+        credentialType = 'llanaAuthApi'
     } else {
-    	credentials = await this.getCredentials('llanaHostApi');
+		credentialType = 'llanaHostApi';
     }
+
+	const credentials = await this.getCredentials(credentialType);
 
 	const baseUrl = credentials.host as string;
 
@@ -40,7 +42,7 @@ export async function apiRequest(
 	};
 
 	try {
-		return await this.helpers.httpRequestWithAuthentication.call(this, authenticationMethod, options);
+		return await this.helpers.httpRequestWithAuthentication.call(this, credentialType, options);
 	} catch (error) {
 		if (error instanceof NodeApiError) {
 			throw error;
