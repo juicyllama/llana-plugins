@@ -17,16 +17,16 @@ export async function apiRequest(
 	body: any = {},
 	query: IDataObject = {},
 ): Promise<any> {
-	const authenticationMethod = this.getNodeParameter('authentication', 0);
+	const authenticationMethod = <string>this.getNodeParameter('authentication', 0);
 
     let credentials;
 
     if (authenticationMethod === 'apiKey') {
         credentials = await this.getCredentials('llanaKeyApi');
-    } else if ('userPass') {
+    } else if (authenticationMethod === 'userPass') {
         credentials = await this.getCredentials('llanaAuthApi');
     } else {
-                credentials = await this.getCredentials('llanaHostApi');
+    	credentials = await this.getCredentials('llanaHostApi');
     }
 
 	const baseUrl = credentials.host as string;

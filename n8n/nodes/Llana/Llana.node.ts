@@ -33,7 +33,7 @@ export class Llana implements INodeType {
                 name: 'llanaKeyApi',
                 required: false,
                 displayName: 'API Key',
-                                displayOptions: {
+                displayOptions: {
                     show: {
                         authentication: ['apiKey'],
                     },
@@ -43,7 +43,7 @@ export class Llana implements INodeType {
                 name: 'llanaAuthApi',
                 required: false,
                 displayName: 'Username & Password',
-                                displayOptions: {
+                displayOptions: {
                     show: {
                         authentication: ['userPass'],
                     },
@@ -53,7 +53,7 @@ export class Llana implements INodeType {
                 name: 'llanaHostApi',
                 required: false,
                 displayName: 'Host',
-                                displayOptions: {
+                displayOptions: {
                     show: {
                         authentication: ['hostApi'],
                     },
