@@ -1,6 +1,6 @@
 {
   "name": "@juicyllama/n8n-nodes-llana",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "n8n community node for Llana",
   "tags": [
     "llana",
@@ -9,7 +9,7 @@
   ],
   "keywords": [
     "n8n-community-node-package",
-	"llana",
+    "llana",
     "n8n",
     "plugin"
   ],
