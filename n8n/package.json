@@ -1,6 +1,6 @@
 {
   "name": "@juicyllama/n8n-nodes-llana",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "n8n community node for Llana",
   "tags": [
     "llana",
@@ -49,8 +49,8 @@
     "n8nNodesApiVersion": 1,
     "credentials": [
       "dist/credentials/LlanaKeyApi.credentials.js",
-	  "dist/credentials/LlanaAuthApi.credentials.js",
-	  "dist/credentials/LlanaHostApi.credentials.js"
+      "dist/credentials/LlanaAuthApi.credentials.js",
+      "dist/credentials/LlanaHostApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/Llana/Llana.node.js"
