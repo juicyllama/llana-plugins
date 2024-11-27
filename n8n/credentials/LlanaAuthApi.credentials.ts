@@ -14,6 +14,8 @@ export class LlanaAuthApi implements ICredentialType {
 
 	documentationUrl = 'https://llana.io/endpoints';
 
+	icon: 'file:llana.png',
+
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Host',
