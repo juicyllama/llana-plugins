@@ -6,6 +6,9 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 
+import { BINARY_ENCODING, NodeOperationError, jsonParse } from 'n8n-workflow';
+import type { Readable } from 'stream';
+
 import { apiRequest, apiRequestAllItems, getTables, getFields } from './GenericFunctions';
 
 export type FieldsUiValues = Array<{
@@ -156,7 +159,7 @@ export class Llana implements INodeType {
 				},
 				displayOptions: {
 					show: {
-						operation: ['get,getMany'],
+						operation: ['get','getMany'],
 					},
 				},
 				default: [],
@@ -175,6 +178,98 @@ export class Llana implements INodeType {
 				},
 				default: false,
 				description: 'Whether to return all results or only up to a given limit',
+			},
+			{
+				displayName: 'Send Query Parameters',
+				name: 'sendQuery',
+				type: 'boolean',
+				displayOptions: {
+					show: {
+						operation: ['getMany']
+					},
+				},
+				default: false,
+				noDataExpression: true,
+				description: 'Whether the request has query params or not',
+			},
+			{
+				displayName: 'Specify Query Parameters',
+				name: 'specifyQuery',
+				type: 'options',
+				displayOptions: {
+					show: {
+						operation: ['getMany'],
+						sendQuery: [true],
+					},
+				},
+				options: [
+					{
+						name: 'Using Fields Below',
+						value: 'keypair',
+					},
+					{
+						name: 'Using JSON',
+						value: 'json',
+					},
+				],
+				default: 'keypair',
+			},
+			{
+				displayName: 'Query Parameters',
+				name: 'queryParameters',
+				type: 'fixedCollection',
+				displayOptions: {
+					show: {
+						operation: ['getMany'],
+						sendQuery: [true],
+						specifyQuery: ['keypair'],
+					},
+				},
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add Parameter',
+				default: {
+					parameters: [
+						{
+							name: '',
+							value: '',
+						},
+					],
+				},
+				options: [
+					{
+						name: 'parameters',
+						displayName: 'Parameter',
+						values: [
+							{
+								displayName: 'Name',
+								name: 'name',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Value',
+								name: 'value',
+								type: 'string',
+								default: '',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'JSON',
+				name: 'jsonQuery',
+				type: 'json',
+				displayOptions: {
+					show: {
+						operation: ['getMany'],
+						sendQuery: [true],
+						specifyQuery: ['json'],
+					},
+				},
+				default: '',
 			},
 			{
 				displayName: 'Limit',
@@ -266,16 +361,79 @@ export class Llana implements INodeType {
 				}
 
 				if (operation === 'getMany') {
+
+					const sendQuery = this.getNodeParameter('sendQuery', i, false) as boolean;
+					const queryParameters = this.getNodeParameter(
+						'queryParameters.parameters',
+						i,
+						[],
+					) as [{ name: string; value: string }];
+					const specifyQuery = this.getNodeParameter('specifyQuery', i, 'keypair') as string;
+					const jsonQueryParameter = this.getNodeParameter('jsonQuery', i, '') as string;
+
+					const parametersToKeyValue = async (
+						accumulator: { [key: string]: any },
+						cur: { name: string; value: string; parameterType?: string; inputDataFieldName?: string },
+					) => {
+						if (cur.parameterType === 'formBinaryData') {
+							if (!cur.inputDataFieldName) return accumulator;
+							const binaryData = this.helpers.assertBinaryData(i, cur.inputDataFieldName);
+							let uploadData: Buffer | Readable;
+							const itemBinaryData = items[i].binary![cur.inputDataFieldName];
+							if (itemBinaryData.id) {
+								uploadData = await this.helpers.getBinaryStream(itemBinaryData.id);
+							} else {
+								uploadData = Buffer.from(itemBinaryData.data, BINARY_ENCODING);
+							}
+
+							accumulator[cur.name] = {
+								value: uploadData,
+								options: {
+									filename: binaryData.fileName,
+									contentType: binaryData.mimeType,
+								},
+							};
+							return accumulator;
+						}
+						accumulator[cur.name] = cur.value;
+						return accumulator;
+					};
+
+					let qs: IDataObject = {};
+
+					// Get parameters defined in the UI
+					if (sendQuery && queryParameters) {
+						if (specifyQuery === 'keypair') {
+							qs = await reduceAsync(queryParameters, parametersToKeyValue);
+						} else if (specifyQuery === 'json') {
+							// query is specified using JSON
+							try {
+								JSON.parse(jsonQueryParameter);
+							} catch {
+								throw new NodeOperationError(
+									this.getNode(),
+									'JSON parameter needs to be valid JSON',
+									{
+										itemIndex: i,
+									},
+								);
+							}
+
+							qs = jsonParse(jsonQueryParameter);
+						}
+					}
+
+
 					const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 					if (returnAll) {
-						response = await apiRequestAllItems.call(this, 'data', 'GET', `${table}/`, {}, {});
+						response = await apiRequestAllItems.call(this, 'data', 'GET', `${table}/`, {}, qs);
 					} else {
 						response = await apiRequest.call(
 							this,
 							'GET',
 							`${table}/`,
 							{},
-							{ limit: this.getNodeParameter('limit', i) as number },
+							{ ...qs, limit: this.getNodeParameter('limit', i) as number },
 						);
 						response = response.data;
 					}
@@ -329,3 +487,14 @@ export class Llana implements INodeType {
 		return [returnData];
 	}
 }
+
+async function reduceAsync<T, R>(
+	arr: T[],
+	reducer: (acc: Awaited<Promise<R>>, cur: T) => Promise<R>,
+	init: Promise<R> = Promise.resolve({} as R),
+): Promise<R> {
+	return await arr.reduce(async (promiseAcc, item) => {
+		return await reducer(await promiseAcc, item);
+	}, init);
+}
+
