@@ -17,26 +17,17 @@ export async function apiRequest(
 	body: any = {},
 	query: IDataObject = {},
 ): Promise<any> {
+	const authenticationMethod = this.getNodeParameter('authentication', 0);
 
-	let credentials
-	let credentialsName
+    let credentials;
 
-	const credentialsA = await this.getCredentials('llanaKeyApi');
-	const credentialsB = await this.getCredentials('llanaAuthApi');
-	const credentialsC = await this.getCredentials('llanaHostApi');
-
-	if(credentialsA?.host){
-		credentials = credentialsA
-		credentialsName = 'llanaKeyApi'
-	}else if(credentialsB?.host){
-		credentials = credentialsB
-		credentialsName = 'llanaAuthApi'
-	}else if(credentialsC?.host){
-		credentials = credentialsC
-		credentialsName = 'llanaHostApi'
-	}else{
-		throw new NodeApiError(this.getNode(), { message: 'No credentials found' } as JsonObject);
-	}
+    if (authenticationMethod === 'apiKey') {
+        credentials = await this.getCredentials('llanaKeyApi');
+    } else if ('userPass') {
+        credentials = await this.getCredentials('llanaAuthApi');
+    } else {
+                credentials = await this.getCredentials('llanaHostApi');
+    }
 
 	const baseUrl = credentials.host as string;
 
@@ -49,7 +40,7 @@ export async function apiRequest(
 	};
 
 	try {
-		return await this.helpers.httpRequestWithAuthentication.call(this, credentialsName, options);
+		return await this.helpers.httpRequestWithAuthentication.call(this, authenticationMethod, options);
 	} catch (error) {
 		if (error instanceof NodeApiError) {
 			throw error;
