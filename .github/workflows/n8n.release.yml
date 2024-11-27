@@ -1,0 +1,68 @@
+#
+# GitHub Actions workflow.
+#
+# Releases the package to npm when a push into main is detected.
+# * Install pnpm
+# * Bump version number
+# * Release to NPM
+#
+
+name: 'Release Package: n8n'
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - 'n8n/**'
+            - '.github/workflows/n8n.release.yml'
+    workflow_dispatch:
+
+jobs:
+
+    release:
+        name: 'Release Package: n8n'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            -   name: 'Checkout'
+                uses: actions/checkout@v4
+                with:
+                    token: ${{ secrets.GH_CI_CD_RELEASE }}
+                    sparse-checkout: |
+                        n8n
+
+            -   run: corepack enable
+
+            -   name: 'Install Node.js'
+                uses: actions/setup-node@v4
+                with:
+                    node-version: 20
+
+            -   name: 'Install pnpm'
+                run: npm install -g pnpm
+
+            -   name: 'Version Bump'
+                uses: phips28/gh-action-bump-version@master
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GH_CI_CD_RELEASE }}
+                    PACKAGEJSON_DIR: n8n
+                with:
+                    major-wording: 'JLMAJOR'
+                    minor-wording: 'feature,feat'
+                    patch-wording: 'patch,fixes,fix,misc,docs,refactor'
+                    commit-message: 'Release Package: Llana n8n Plugin Bump Version [skip ci]'
+                    skip-tag: true
+
+            -   name: 'Pull version'
+                run: cd n8n/ && git pull && cd ..
+
+            -   name: Install dependencies
+                run: cd n8n/ && pnpm install && cd ..
+
+            -   name: 'Authenticate with NPM'
+                run: cd n8n/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
+
+            -   name: 'Publishing package'
+                run: cd n8n/ && pnpm run build && pnpm publish && cd ..
