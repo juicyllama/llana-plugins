@@ -29,23 +29,58 @@ export class Llana implements INodeType {
 		inputs: ['main'],
 		outputs: ['main'],
 		credentials: [
-			{
-				name: 'llanaKeyApi',
-				required: false,
-				displayName: 'API Key',
-			},
-			{
-				name: 'llanaAuthApi',
-				required: false,
-				displayName: 'Username & Password',
-			},
-			{
-				name: 'llanaHostApi',
-				required: false,
-				displayName: 'Host',
-			},
-		],
+            {
+                name: 'llanaKeyApi',
+                required: false,
+                displayName: 'API Key',
+                                displayOptions: {
+                    show: {
+                        authentication: ['apiKey'],
+                    },
+                },
+            },
+            {
+                name: 'llanaAuthApi',
+                required: false,
+                displayName: 'Username & Password',
+                                displayOptions: {
+                    show: {
+                        authentication: ['userPass'],
+                    },
+                },
+            },
+            {
+                name: 'llanaHostApi',
+                required: false,
+                displayName: 'Host',
+                                displayOptions: {
+                    show: {
+                        authentication: ['hostApi'],
+                    },
+                },
+            },
+        ],
 		properties: [
+			{
+                displayName: 'Authentication',
+                name: 'authentication',
+                type: 'options',
+                options: [
+                    {
+                        name: 'API Key',
+                        value: 'apiKey',
+                    },
+                    {
+                        name: 'Username & Password',
+                        value: 'userPass',
+                    },
+                                        {
+                        name: 'Host API',
+                        value: 'hostApi',
+                    },
+                ],
+                default: 'apiKey',
+            },
 			{
 				displayName: 'Operation',
 				name: 'operation',
