@@ -21,19 +21,19 @@ export async function apiRequest(
 	let credentials
 	let credentialsName
 
-	const credentialsA = await this.getCredentials('llanaApiKey');
-	const credentialsB = await this.getCredentials('llanaAuth');
-	const credentialsC = await this.getCredentials('llanaHost');
+	const credentialsA = await this.getCredentials('llanaKeyApi');
+	const credentialsB = await this.getCredentials('llanaAuthApi');
+	const credentialsC = await this.getCredentials('llanaHostApi');
 
 	if(credentialsA?.host){
 		credentials = credentialsA
-		credentialsName = 'llanaApiKey'
+		credentialsName = 'llanaKeyApi'
 	}else if(credentialsB?.host){
 		credentials = credentialsB
-		credentialsName = 'llanaAuth'
+		credentialsName = 'llanaAuthApi'
 	}else if(credentialsC?.host){
 		credentials = credentialsC
-		credentialsName = 'llanaHost'
+		credentialsName = 'llanaHostApi'
 	}else{
 		throw new NodeApiError(this.getNode(), { message: 'No credentials found' } as JsonObject);
 	}

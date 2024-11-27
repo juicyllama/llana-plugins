@@ -5,10 +5,10 @@ import type {
 	INodeProperties,
 } from 'n8n-workflow';
 
-export class LlanaHost implements ICredentialType {
-	name = 'llanaHost';
+export class LlanaHostApi implements ICredentialType {
+	name = 'llanaHostApi';
 
-	displayName = 'Llana Host';
+	displayName = 'Llana Host API';
 
 	documentationUrl = 'https://llana.io/endpoints';
 

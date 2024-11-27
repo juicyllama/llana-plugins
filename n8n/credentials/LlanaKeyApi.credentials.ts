@@ -5,10 +5,10 @@ import type {
 	INodeProperties,
 } from 'n8n-workflow';
 
-export class LlanaApiKey implements ICredentialType {
-	name = 'llanaApiKey';
+export class LlanaKeyApi implements ICredentialType {
+	name = 'llanaKeyApi';
 
-	displayName = 'Llana API Key';
+	displayName = 'Llana Key API';
 
 	documentationUrl = 'https://llana.io/endpoints';
 
@@ -23,6 +23,7 @@ export class LlanaApiKey implements ICredentialType {
 			displayName: 'Api Key',
 			name: 'apiKey',
 			type: 'string',
+			typeOptions: { password: true },
 			default: '',
 		}
 	];

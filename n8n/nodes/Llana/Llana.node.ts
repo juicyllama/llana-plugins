@@ -30,13 +30,13 @@ export class Llana implements INodeType {
 		outputs: ['main'],
 		credentials: [
 			{
-				name: 'llanaApiKey',
+				name: 'llanaKeyApi',
 			},
 			{
-				name: 'llanaAuth',
+				name: 'llanaAuthApi',
 			},
 			{
-				name: 'llanaHost',
+				name: 'llanaHostApi',
 			},
 		],
 		properties: [
@@ -51,6 +51,12 @@ export class Llana implements INodeType {
 						value: 'create',
 						description: 'Create a record',
 						action: 'Create a record',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a record',
+						action: 'Delete a record',
 					},
 					{
 						name: 'Get',
@@ -69,13 +75,7 @@ export class Llana implements INodeType {
 						value: 'update',
 						description: 'Update a record',
 						action: 'Update a record',
-					},
-					{
-						name: 'Delete',
-						value: 'delete',
-						description: 'Delete a record',
-						action: 'Delete a record',
-					},
+					}
 				],
 				default: 'get',
 			},

@@ -48,9 +48,9 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/LlanaApiKey.credentials.js",
-      "dist/credentials/LlanaAuth.credentials.js",
-      "dist/credentials/LlanaHost.credentials.js"
+      "dist/credentials/LlanaKeyApi.credentials.js",
+	  "dist/credentials/LlanaAuthApi.credentials.js",
+	  "dist/credentials/LlanaHostApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/Llana/Llana.node.js"

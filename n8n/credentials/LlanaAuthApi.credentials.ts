@@ -7,10 +7,10 @@ import type {
 	INodeProperties,
 } from 'n8n-workflow';
 
-export class LlanaAuth implements ICredentialType {
-	name = 'llanaAuth';
+export class LlanaAuthApi implements ICredentialType {
+	name = 'llanaAuthApi';
 
-	displayName = 'Llana Username and Password';
+	displayName = 'Llana Username and Password API';
 
 	documentationUrl = 'https://llana.io/endpoints';
 
