@@ -65,4 +65,4 @@ jobs:
                 run: cd n8n/ &&  echo -e "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc && cd ..
 
             -   name: 'Publishing package'
-                run: cd n8n/ && pnpm run build && pnpm publish && cd ..
+                run: cd n8n/ && pnpm run build && pnpm publish --no-git-checks && cd ..

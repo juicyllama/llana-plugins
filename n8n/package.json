@@ -8,7 +8,10 @@
     "plugin"
   ],
   "keywords": [
-    "n8n-community-node-package"
+    "n8n-community-node-package",
+	"llana",
+    "n8n",
+    "plugin"
   ],
   "license": "MIT",
   "homepage": "",
