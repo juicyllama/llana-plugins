@@ -18,7 +18,26 @@ export async function apiRequest(
 	query: IDataObject = {},
 ): Promise<any> {
 
-	const credentials = await this.getCredentials('llanaApi');
+	let credentials
+	let credentialsName
+
+	const credentialsA = await this.getCredentials('llanaApiKey');
+	const credentialsB = await this.getCredentials('llanaAuth');
+	const credentialsC = await this.getCredentials('llanaHost');
+
+	if(credentialsA?.host){
+		credentials = credentialsA
+		credentialsName = 'llanaApiKey'
+	}else if(credentialsB?.host){
+		credentials = credentialsB
+		credentialsName = 'llanaAuth'
+	}else if(credentialsC?.host){
+		credentials = credentialsC
+		credentialsName = 'llanaHost'
+	}else{
+		throw new NodeApiError(this.getNode(), { message: 'No credentials found' } as JsonObject);
+	}
+
 	const baseUrl = credentials.host as string;
 
 	const options: IHttpRequestOptions = {
@@ -30,7 +49,7 @@ export async function apiRequest(
 	};
 
 	try {
-		return await this.helpers.httpRequestWithAuthentication.call(this, 'llanaApi', options);
+		return await this.helpers.httpRequestWithAuthentication.call(this, credentialsName, options);
 	} catch (error) {
 		if (error instanceof NodeApiError) {
 			throw error;
