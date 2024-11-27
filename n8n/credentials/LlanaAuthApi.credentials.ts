@@ -12,6 +12,11 @@ export class LlanaAuthApi implements ICredentialType {
 
 	displayName = 'Llana Username and Password API';
 
+	iconUrl = {
+		dark: 'file:llana.png',
+		light: 'file:llana.png',
+	};
+
 	documentationUrl = 'https://llana.io/endpoints';
 
 	properties: INodeProperties[] = [

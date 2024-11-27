@@ -10,6 +10,11 @@ export class LlanaKeyApi implements ICredentialType {
 
 	displayName = 'Llana Key API';
 
+	iconUrl = {
+		dark: 'file:llana.png',
+		light: 'file:llana.png',
+	};
+
 	documentationUrl = 'https://llana.io/endpoints';
 
 	properties: INodeProperties[] = [
