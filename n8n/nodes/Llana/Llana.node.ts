@@ -31,12 +31,18 @@ export class Llana implements INodeType {
 		credentials: [
 			{
 				name: 'llanaKeyApi',
+				required: false,
+				displayName: 'API Key',
 			},
 			{
 				name: 'llanaAuthApi',
+				required: false,
+				displayName: 'Username & Password',
 			},
 			{
 				name: 'llanaHostApi',
+				required: false,
+				displayName: 'Host',
 			},
 		],
 		properties: [
