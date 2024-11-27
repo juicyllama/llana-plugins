@@ -1,5 +1,6 @@
 import type {
 	IAuthenticateGeneric,
+	IconFile,
 	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
@@ -10,10 +11,7 @@ export class LlanaHostApi implements ICredentialType {
 
 	displayName = 'Llana Host API';
 
-	iconUrl = {
-		dark: 'file:llana.png',
-		light: 'file:llana.png',
-	};
+	icon = <IconFile>'file:llana.png';
 
 	documentationUrl = 'https://llana.io/endpoints';
 
