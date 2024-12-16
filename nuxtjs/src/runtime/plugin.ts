@@ -301,6 +301,22 @@ export default defineNuxtPlugin(({ $config }) => {
 		}
 	}
 
+	async function AuthCheck(): Promise<boolean> {
+		if (!getToken()) {
+			return false
+		}else{
+			try{
+				const profile = await GetProfile()
+				if(!profile){
+					return false
+				}
+			}catch(e){
+				return false
+			}
+		}
+		return true
+	}
+
 	return {
 		provide: {
 			llana: run,
@@ -310,6 +326,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			llanaSubscribe: Subscribe,
 			llanaInstanceUrl: LLANA_INSTANCE_URL,
 			llanaAccessToken: getToken(),
+			llanaAuthCheck: AuthCheck,
 		},
 	}
 })
