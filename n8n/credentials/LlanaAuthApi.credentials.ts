@@ -63,14 +63,11 @@ export class LlanaAuthApi implements ICredentialType {
 			},
 		});
 
-		if (!result.data) {
-			console.error('result', result)
-			throw new Error('No data got returned');
+		if (!result.access_token) {
+			throw new Error('Unathorized - No access token returned');
 		}
 
-		const { access_token } = result.data;
-
-		return { sessionToken: access_token };
+		return { sessionToken: result.access_token };
 	}
 
 	authenticate: IAuthenticateGeneric = {
