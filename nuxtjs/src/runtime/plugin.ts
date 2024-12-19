@@ -299,6 +299,8 @@ export default defineNuxtPlugin(({ $config }) => {
 		if (e.response?.status === 401 || e.response?.status === 403) {
 			Logout()
 		}
+
+		throw new Error(e)
 	}
 
 	async function AuthCheck(): Promise<boolean> {
