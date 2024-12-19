@@ -145,10 +145,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			return response
 		}
 
-		response.json().then((response: { error: string | undefined }) => {
-			handleResponseError(response.error)
-		})
-
+		handleResponseError(response.error)		
 	}
 
 	async function Login(creds: { username: string; password: string }): Promise<{
