@@ -300,7 +300,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			Logout()
 		}
 
-		throw new Error(e)
+		throw e
 	}
 
 	async function AuthCheck(): Promise<boolean> {
