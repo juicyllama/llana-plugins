@@ -18,7 +18,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		offset?: number
 		page?: string
 		sort?: string
-	}): Promise<ListResponse<T> | T | DeletedResponse> {
+	}): Promise<ListResponse<T> | T | DeletedResponse | void> {
 		let url: string
 		const fetchOptions: any = {
 			method: 'GET',
@@ -64,11 +64,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				try{
-					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
-				}catch(e){
-					handleResponseError(e)
-				}
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
 
 				break
 
@@ -84,11 +80,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				try{
-					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
-				} catch(e){
-					handleResponseError(e)
-				}
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
 
 				break
 
@@ -108,12 +100,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				try{
-					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
-				} catch(e){
-					handleResponseError(e)
-				}
-
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
 				break
 
 			case 'DELETE':
@@ -127,12 +114,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				try{
-					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
-				} catch(e){
-					handleResponseError(e)
-				}
-
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
 				break
 
 			case 'GET':
@@ -150,20 +132,22 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				try{
-					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
-				} catch(e){
-					handleResponseError(e)
-				}
-
+				response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
 				break
 
 			default:
 				throw new Error('Invalid request type')
 		}
 
-		if (LLANA_DEBUG) console.dir(response)
-		return response
+		if(response.ok){
+			response = await response.json()
+			if (LLANA_DEBUG) console.dir(response)
+			return response
+		}
+
+		response.json().then((response: { error: string | undefined }) => {
+			handleResponseError(response.error)
+		})
 
 	}
 
