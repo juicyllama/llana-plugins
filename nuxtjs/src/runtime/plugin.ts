@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client'
 import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
 import { defineNuxtPlugin, useCookie, navigateTo } from '#imports'
+import type { FetchError } from 'ofetch'
 
 export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
@@ -254,7 +255,9 @@ export default defineNuxtPlugin(({ $config }) => {
 	 * Gets the users profile
 	 */
 
-	async function GetProfile<T>(): Promise<T | undefined> {
+	async function GetProfile<T>(options?: {
+    relations?: string[],
+  }): Promise<T | undefined> {
 		try {
 			const fetchConfig = {
 				method: 'GET',
@@ -266,7 +269,13 @@ export default defineNuxtPlugin(({ $config }) => {
 
 			if (LLANA_DEBUG) console.log(`Running Llana Request: '/auth/profile'`)
 
-			const result = <T>await (<any>await $fetch(LLANA_INSTANCE_URL + '/auth/profile', <any>fetchConfig))
+      let url = LLANA_INSTANCE_URL + '/auth/profile'
+
+      if(options?.relations){
+        url += `?relations=${options.relations.join(',')}`
+      }
+
+			const result = <T>await (<any>await $fetch(url, <any>fetchConfig))
 
       		if (LLANA_DEBUG) console.dir(result)
 
@@ -300,7 +309,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			Logout()
 		}
 
-		throw e
+		throw (e as FetchError)
 	}
 
 	async function AuthCheck(): Promise<boolean> {
