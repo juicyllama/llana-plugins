@@ -42,7 +42,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (options.where && options.where.length) {
 					for (const w of options.where) {
-						url += `${w.field}[${w.operator}]=${w.value}&`
+						if(w.operator){
+							url += `${w.field}[${w.operator}]=${w.value}&`
+						}else{
+							url += `${w.field}=${w.value}&`
+						}
 					}
 				}
 
