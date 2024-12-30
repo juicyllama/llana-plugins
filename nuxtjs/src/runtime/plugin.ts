@@ -19,6 +19,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		offset?: number
 		page?: string
 		sort?: string
+    hard?: boolean
 	}): Promise<ListResponse<T> | T | DeletedResponse> {
 		let url: string
 		const fetchOptions: any = {
@@ -123,6 +124,10 @@ export default defineNuxtPlugin(({ $config }) => {
 				}
 
 				url = `/${options.table}/${options.id}`
+
+        if(options.hard){
+          url += '?hard=true'
+        }
 
 				fetchOptions.method = 'DELETE'
 
