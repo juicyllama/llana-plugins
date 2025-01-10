@@ -1,6 +1,7 @@
 export * from './commands'
 export * from './error'
 export * from './socket'
+export * from './nuxt'
 
 export type LlanaRequestType = 'LIST' | 'GET' | 'CREATE' | 'UPDATE' | 'DELETE'
 
