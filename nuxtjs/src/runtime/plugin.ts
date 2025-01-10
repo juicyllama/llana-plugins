@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client'
-import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData, UseFetchOptions, AsyncData } from './types/index'
-import { defineNuxtPlugin, useCookie, navigateTo, useFetch } from '#imports'
+import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
+import { defineNuxtPlugin, useCookie, navigateTo } from '#imports'
 import type { FetchError } from 'ofetch'
 
 export default defineNuxtPlugin(({ $config }) => {
@@ -20,19 +20,15 @@ export default defineNuxtPlugin(({ $config }) => {
 		page?: string
 		sort?: string
     hard?: boolean
-	}, fetchOptions: UseFetchOptions<ListResponse<T> | T | DeletedResponse>
-): Promise<AsyncData<ListResponse<T> | T | DeletedResponse, FetchError> | T | DeletedResponse> {
-
-    let url: string
-
-		fetchOptions = {
-      ...fetchOptions,
+	}): Promise<ListResponse<T> | T | DeletedResponse> {
+		let url: string
+		const fetchOptions: any = {
 			method: 'GET',
 			headers: {
 				Authorization: 'Bearer ' + getToken(),
 				'Content-Type': 'application/json',
 			},
-		} as UseFetchOptions<ListResponse<T> | T | DeletedResponse>
+		}
 
 		let response: any
 
@@ -74,15 +70,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-				response = (await useFetch<ListResponse<T>, FetchError>(LLANA_INSTANCE_URL + url, <any>{...fetchOptions,
-          onResponseError({ response }) {
-            if (response.status === 401 || response?.status === 403) {
-              console.error(response.body)
-              Logout()
-              throw (response as FetchError)
-            }
-          }
-        })) as AsyncData<ListResponse<T>, FetchError>
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as ListResponse<T>
+				}catch(e){
+					handleResponseError(e)
+				}
 
 				break
 
@@ -146,7 +138,7 @@ export default defineNuxtPlugin(({ $config }) => {
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
 				try{
-          response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as DeletedResponse
 				} catch(e){
 					handleResponseError(e)
 				}
@@ -168,16 +160,11 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (LLANA_DEBUG) console.log(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
-
-        response = (await useFetch(LLANA_INSTANCE_URL + url, <any>{...fetchOptions,
-          onResponseError({ response }) {
-            if (response.status === 401 || response?.status === 403) {
-              console.error(response.body)
-              Logout()
-              throw (response as FetchError)
-            }
-          }
-        })) as AsyncData<T, FetchError>
+				try{
+					response = (await $fetch(LLANA_INSTANCE_URL + url, <any>fetchOptions)) as T
+				} catch(e){
+					handleResponseError(e)
+				}
 
 				break
 
@@ -279,7 +266,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	async function GetProfile<T>(options?: {
     relations?: string[],
-	}): Promise<T | undefined> {
+  }): Promise<T | undefined> {
 		try {
 			const fetchConfig = {
 				method: 'GET',
@@ -298,8 +285,10 @@ export default defineNuxtPlugin(({ $config }) => {
       }
 
 			const result = <T>await (<any>await $fetch(url, <any>fetchConfig))
-      if (LLANA_DEBUG) console.dir(result)
-      return result
+
+      		if (LLANA_DEBUG) console.dir(result)
+
+        	return result
 
 		} catch (e: any) {
 			handleResponseError(e)
