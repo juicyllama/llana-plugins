@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client'
-import type { DeletedResponse, ListResponse, LlanaRequestType, Where, SocketData } from './types/index'
+import type { DeletedResponse, ListResponse, SocketData, LlanaRequest } from './types/index'
 import { defineNuxtPlugin, useCookie, navigateTo } from '#imports'
 import type { FetchError } from 'ofetch'
 
@@ -8,19 +8,7 @@ export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_DEBUG = <boolean>Boolean($config.public.LLANA_DEBUG)
 	const LLANA_TOKEN_KEY = 'llana_access_token'
 
-	async function run<T>(options: {
-		type: LlanaRequestType
-		table: string
-		id?: string | number
-		data?: T | Partial<T>
-		relations?: string
-		where?: Where[]
-		limit?: number
-		offset?: number
-		page?: string
-		sort?: string
-    hard?: boolean
-	}): Promise<ListResponse<T> | T | DeletedResponse> {
+	async function run<T>(options: LlanaRequest<T>): Promise<ListResponse<T> | T | DeletedResponse> {
 		let url: string
 		const fetchOptions: any = {
 			method: 'GET',
@@ -35,6 +23,10 @@ export default defineNuxtPlugin(({ $config }) => {
 		switch (options.type) {
 			case 'LIST':
 				url = `/${options.table}/?`
+
+        if(options.fields && options.fields.length){
+          url += `fields=${options.fields.join(',')}&`
+        }
 
 				if (options.relations && options.relations != null) {
 					url += `relations=${options.relations}&`
@@ -151,6 +143,10 @@ export default defineNuxtPlugin(({ $config }) => {
 				}
 
 				url = `/${options.table}/${options.id}?`
+
+        if(options.fields && options.fields.length){
+          url += `fields=${options.fields.join(',')}&`
+        }
 
 				if (options.relations && options.relations != null) {
 					url += `relations=${options.relations}&`

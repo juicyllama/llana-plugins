@@ -1,6 +1,6 @@
 import { defineNuxtModule, addPlugin, createResolver, addImportsDir } from '@nuxt/kit'
 
-export * from './runtime/types'
+export * from './runtime/types/index'
 
 export default defineNuxtModule({
 	meta: {
