@@ -58,6 +58,7 @@ export class LlanaAuthApi implements ICredentialType {
 				username,
 				password
 			},
+			credentials: 'include', // Added for cookie passing
 			headers: {
 				'Content-Type': 'application/json',
 			},

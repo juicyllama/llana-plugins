@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import type { Client } from '@/types/Clients'
 import type { ListResponse } from '@/plugins/llana'
 
-const { $llanaAuthCheck, $llanaLogin, $llanaGetProfile, $llanaAccessToken, $llanaSubscribe, $llana } = useNuxtApp()
+const { $llanaAuthCheck, $llanaLogin, $llanaGetProfile, $llanaSubscribe, $llana } = useNuxtApp()
 
 const table = 'User'
 
@@ -37,8 +37,7 @@ const login = async () => {
 			isAuthed.value = true
 			loginError.value = null
 			await fetchProfile()
-			headers.value.Authorization = 'Bearer ' + $llanaAccessToken
-			await clientsStore.listClients()
+			await refetchUsers()
 			subscribeToUpdates()
 		} else {
 			loginError.value = 'Login failed'
@@ -90,11 +89,14 @@ const subscribeToUpdates = () => {
 	$llanaSubscribe(table, (data: SocketData) => clientsStore.listClients(true), (data: SocketData) => clientsStore.listClients(true), (data: SocketData) => clientsStore.listClients(true))
 }
 
+const refetchUsers = async () => {
+	await clientsStore.listClients(true)
+}
+
 onMounted(async () => {
 	await checkAuth()
 	if (isAuthed.value) {
 		await fetchProfile()
-		headers.value.Authorization = 'Bearer ' + $llanaAccessToken
 	}
 })
 </script>
@@ -128,6 +130,7 @@ onMounted(async () => {
 				<ul>
 					<li v-for="client in clientsStore.data" :key="client.id">{{ client.email }}</li>
 				</ul>
+				<button @click="refetchUsers">Refetch Users</button>
 			</div>
 
 			<div>
