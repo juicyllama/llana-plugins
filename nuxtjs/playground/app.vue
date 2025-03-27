@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import type { Client } from '@/types/Clients'
 import type { ListResponse } from '@/plugins/llana'
 
-const { $llanaAuthCheck, $llanaLogin, $llanaGetProfile, $llanaSubscribe, $llana } = useNuxtApp()
+const { $llanaAuthCheck, $llanaLogin, $llanaGetProfile, $llanaSubscribe, $llanaLogout, $llana } = useNuxtApp()
 
 const table = 'User'
 
@@ -44,6 +44,17 @@ const login = async () => {
 		}
 	} catch (error) {
 		loginError.value = 'Login failed'
+	}
+}
+
+const logout = async () => {
+	try {
+		await $llanaLogout()
+		isAuthed.value = false
+		profile.value = null
+		clientsStore.$reset()
+	} catch (error) {
+		console.error('Logout failed', error)
 	}
 }
 
@@ -123,6 +134,10 @@ onMounted(async () => {
 				<h2>Profile</h2>
 				<p>Name: {{ profile.name }}</p>
 				<p>Email: {{ profile.email }}</p>
+			</div>
+
+			<div v-if="isAuthed">
+				<button @click="logout">Logout</button>
 			</div>
 
 			<div>

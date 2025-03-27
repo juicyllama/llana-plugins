@@ -9,7 +9,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	const fetchOptions: any = {
 		method: 'GET',
-		credentials: 'include', // Added for cookie passing
+		credentials: 'include', // Added for cookie passing, required for auth and refresh token
 		headers: {
 			'Content-Type': 'application/json',
 		},
@@ -312,8 +312,10 @@ export default defineNuxtPlugin(({ $config }) => {
 		}
 	}
 
-	function Logout(): void {
+	async function Logout(): Promise<void> {
 		if (LLANA_DEBUG) console.log(`Llana Logging out`)
+		let url = LLANA_INSTANCE_URL + '/auth/logout'
+		await (<any>await $fetch(url, { ...fetchOptions, method: 'POST' }))
 		navigateTo('/login', { replace: true })
 	}
 
