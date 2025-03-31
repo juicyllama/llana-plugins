@@ -97,17 +97,54 @@ const createUser = async () => {
 }
 
 const subscribeToUpdates = () => {
-	$llanaSubscribe(table, (data: SocketData) => clientsStore.listClients(true), (data: SocketData) => clientsStore.listClients(true), (data: SocketData) => clientsStore.listClients(true))
+	const onSocketEvent = (type) => async (data: SocketData) => {
+		// await clientsStore.listClients(true)
+		fetchProfile()
+	}
+
+	$llanaSubscribe(table, onSocketEvent('CREATE'), onSocketEvent('UPDATE'), onSocketEvent('DELETE'))
 }
 
 const refetchUsers = async () => {
 	await clientsStore.listClients(true)
 }
 
+const updateFirstName = async () => {
+	if (!profile.value) return
+
+	const currentFirstName = profile.value.firstName
+	const match = currentFirstName.match(/(\d+)$/)
+	let newFirstName: string
+
+	if (match) {
+		const number = parseInt(match[1], 10)
+		newFirstName = currentFirstName.replace(/(\d+)$/, String(number + 1))
+	} else {
+		newFirstName = `${currentFirstName}1`
+	}
+
+	try {
+		const response = await $llana({
+			type: 'UPDATE',
+			table,
+			data: { firstName: newFirstName },
+			id: profile.value.id,
+		})
+		if (response.firstName === newFirstName) {
+			profile.value.firstName = newFirstName
+		} else {
+			console.error('Failed to update first name')
+		}
+	} catch (error) {
+		console.error('Failed to update first name', error)
+	}
+}
+
 onMounted(async () => {
 	await checkAuth()
 	if (isAuthed.value) {
 		await fetchProfile()
+		// subscribeToUpdates()
 	}
 })
 </script>
@@ -121,6 +158,7 @@ onMounted(async () => {
 			<div v-else>Not Authenticated</div>
 
 			<button @click="checkAuth">Check Auth</button>
+			<button @click="fetchProfile">Fetch Profile</button>
 
 			<form @submit.prevent="login">
 				<input v-model="form.email" type="email" placeholder="Email" required />
@@ -134,10 +172,13 @@ onMounted(async () => {
 				<h2>Profile</h2>
 				<p>Name: {{ profile.name }}</p>
 				<p>Email: {{ profile.email }}</p>
+				<p>First Name: {{ profile.firstName }}</p>
+				<button @click="updateFirstName">Update First Name</button>
 			</div>
 
 			<div v-if="isAuthed">
 				<button @click="logout">Logout</button>
+				<button @click="subscribeToUpdates">Subscribe to Updates</button>
 			</div>
 
 			<div>
