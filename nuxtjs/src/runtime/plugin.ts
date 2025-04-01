@@ -226,12 +226,14 @@ export default defineNuxtPlugin(({ $config }) => {
 		}
 	}
 
+	// Subscribe to a table. Returns a function to unsubscribe and close the socket
 	async function Subscribe(
 		table: string,
 		callbackInsert?: Function,
 		callbackUpdate?: Function,
 		callbackDelete?: Function,
-	): Promise<void> {
+	): Promise<() => void> {
+		let isManuallyDisconnected = false
 		if (!table) {
 			throw new Error('No table provided for subscription')
 		}
@@ -269,6 +271,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		try {
 			socket.on('connect', () => {
 				debug(`Subscribed to Llana Instance ${table}: ${socket.id}`)
+				isManuallyDisconnected = false
 			})
 			socket.on(table, (data: SocketData) => {
 				debug(`New WS Message: ${socket.id}`, {
@@ -289,7 +292,9 @@ export default defineNuxtPlugin(({ $config }) => {
 			})
 			socket.on('disconnect', reason => {
 				debug(`[WebSocket] Disconnected: ${reason}. Attempting reconnect...`)
-				attemptReconnect()
+				if (!isManuallyDisconnected) {
+					attemptReconnect()
+				}
 			})
 
 			socket.on('connect_error', async error => {
@@ -298,7 +303,6 @@ export default defineNuxtPlugin(({ $config }) => {
 				if (error.message === 'Token error') {
 					try {
 						const newToken = await refreshToken()
-						socket!.io.opts.extraHeaders.Authorization = `Bearer ${newToken}`
 						socket!.io.opts.auth.token = `Bearer ${newToken}`
 						debug(`[WebSocket] Reconnecting with new token`)
 						socket!.connect()
@@ -312,9 +316,15 @@ export default defineNuxtPlugin(({ $config }) => {
 				debug(`[WebSocket] Error: ${error.message}`)
 			})
 			socket.connect()
+
+			return () => {
+				isManuallyDisconnected = true
+				socket.close()
+			}
 		} catch (e: any) {
 			console.error(e)
-			socket.off(table)
+			socket.close()
+			throw e
 		}
 	}
 
@@ -387,6 +397,7 @@ export default defineNuxtPlugin(({ $config }) => {
 			llanaSubscribe: Subscribe,
 			llanaInstanceUrl: LLANA_INSTANCE_URL,
 			llanaAuthCheck: AuthCheck,
+			llanaAccessToken: refreshToken,
 		},
 	}
 })
