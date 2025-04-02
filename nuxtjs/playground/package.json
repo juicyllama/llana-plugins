@@ -8,6 +8,8 @@
     "generate": "nuxi generate"
   },
   "dependencies": {
-    "nuxt": "^3.13.2"
+    "@pinia/nuxt": "^0.10.1",
+    "nuxt": "^3.13.2",
+    "pinia": "^3.0.1"
   }
 }
