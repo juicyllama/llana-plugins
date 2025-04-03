@@ -23,8 +23,8 @@ const newUser = ref<{ email: string, password: string, role: string, firstName: 
 	lastName: ''
 })
 
-const checkAuth = async () => {
-	isAuthed.value = await $llanaAuthCheck()
+const checkAuth = () => {
+	isAuthed.value = $llanaAuthCheck()
 }
 
 const login = async () => {
@@ -141,7 +141,7 @@ const updateFirstName = async () => {
 }
 
 onMounted(async () => {
-	await checkAuth()
+	checkAuth()
 	if (isAuthed.value) {
 		await fetchProfile()
 		// subscribeToUpdates()
