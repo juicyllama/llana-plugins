@@ -2,6 +2,7 @@ import { defineNuxtPlugin, navigateTo } from '#imports'
 import type { FetchError } from 'ofetch'
 import { io } from 'socket.io-client'
 import type { DeletedResponse, ListResponse, LlanaRequest, SocketData } from './types/index'
+import { useCookie } from '#app'
 
 export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
@@ -369,13 +370,9 @@ export default defineNuxtPlugin(({ $config }) => {
 		throw e as FetchError
 	}
 
-	async function AuthCheck(): Promise<boolean> {
-		try {
-			const profile = await GetProfile()
-			return !!profile
-		} catch (e) {
-			return false
-		}
+	function AuthCheck(): boolean {
+		const isLlanaLoggedIn = useCookie('isLlanaLoggedIn')?.value
+		return !!isLlanaLoggedIn
 	}
 
 	function debug(msg: string, props?: any) {
