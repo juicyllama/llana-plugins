@@ -1,8 +1,21 @@
-import { defineNuxtPlugin, navigateTo } from '#imports'
+import { defineNuxtPlugin, navigateTo, useCookie } from '#app'
 import type { FetchError } from 'ofetch'
 import { io } from 'socket.io-client'
 import type { DeletedResponse, ListResponse, LlanaRequest, SocketData } from './types/index'
-import { useCookie } from '#app'
+
+const IS_LOGGED_IN_COOKIE_NAME = 'isLlanaLoggedIn'
+
+function setCookie(name: string, value: string | boolean, options: { maxAge?: number } = {}) {
+	let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value.toString())}; path=/;`
+	if (options.maxAge) {
+		cookieString += ` max-age=${options.maxAge};`
+	}
+	document.cookie = cookieString
+}
+
+function removeCookie(name: string) {
+	document.cookie = `${encodeURIComponent(name)}=; path=/; max-age=0;`
+}
 
 export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
@@ -20,6 +33,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		let url = LLANA_INSTANCE_URL + '/auth/refresh'
 		const result = await (<any>await $fetch(url, { ...fetchOptions, method: 'POST' }))
 		debug(`Token refreshed: ${result.access_token.slice(0, 10)}...`)
+		setCookie(IS_LOGGED_IN_COOKIE_NAME, true, { maxAge: result.refresh_token_expires_in }) // 7 days
 		return result.access_token
 	}
 
@@ -215,6 +229,8 @@ export default defineNuxtPlugin(({ $config }) => {
 				method: 'POST',
 				body: creds,
 			})
+			setCookie(IS_LOGGED_IN_COOKIE_NAME, true, { maxAge: response.refresh_token_expires_in }) // 7 days
+
 			return {
 				access_token: response.access_token,
 				status: 'status' in response ? response?.status : 200,
@@ -357,6 +373,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		debug(`Llana Logging out`)
 		let url = LLANA_INSTANCE_URL + '/auth/logout'
 		await (<any>await $fetch(url, { ...fetchOptions, method: 'POST' }))
+		removeCookie(IS_LOGGED_IN_COOKIE_NAME)
 		navigateTo('/login', { replace: true })
 	}
 
