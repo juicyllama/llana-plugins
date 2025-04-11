@@ -1,5 +1,6 @@
 export default defineNuxtConfig({
 	modules: ['../src/module', '@pinia/nuxt'],
+	ssr: true,
 
 	build: {
 		transpile: ['#app'],
@@ -19,11 +20,12 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		public: {
-			LLANA_INSTANCE_URL: 'http://localhost:3000',
-			LLANA_DEBUG: false,
+			LLANA_INSTANCE_URL: 'http://localhost:3000',		
+			LLANA_INSTANCE_PROXY_URL: 'http://localhost:3001/api',
+			LLANA_DEBUG: true,
 		},
 		LLANA_TOKEN_KEY: 'key',
 	},
 
-	compatibilityDate: '2025-03-23',
+	compatibilityDate: '2025-04-03',
 })
