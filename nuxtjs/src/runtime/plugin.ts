@@ -1,16 +1,17 @@
-import { defineNuxtPlugin, navigateTo, useCookie } from '#app'
-import type { FetchError } from 'ofetch'
+import { defineNuxtPlugin, navigateTo, useCookie, useRequestHeaders } from '#app'
 import { io } from 'socket.io-client'
 import type { DeletedResponse, ListResponse, LlanaRequest, SocketData } from './types/index'
 
 const IS_LOGGED_IN_COOKIE_NAME = 'isLlanaLoggedIn'
-const ACCESS_TOKEN_COOKIE_NAME = 'accessToken'
 
 export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
-	const NUXT_URL = <string>$config.public.NUXT_URL
+	const API_URL = <string>$config.public.LLANA_INSTANCE_PROXY_URL || LLANA_INSTANCE_URL
 	const LLANA_DEBUG = <boolean>Boolean($config.public.LLANA_DEBUG)
-	const API_URL = NUXT_URL ? `${NUXT_URL}/api` : LLANA_INSTANCE_URL
+
+	// Add a refresh token lock to prevent multiple concurrent refresh attempts
+	let isRefreshing = false
+	let refreshPromise: Promise<string> | null = null
 
 	const getFetchOptions = () => {
 		const opts = {
@@ -18,31 +19,60 @@ export default defineNuxtPlugin(({ $config }) => {
 			credentials: 'include', // Added for cookie passing, required for auth and refresh token
 			headers: {
 				'Content-Type': 'application/json',
-				...useRequestHeaders(['cookie']),
+				...useRequestHeaders(), // Pass auth cookies from the request headers
 			},
 		}
 		return opts
 	}
 
 	async function refreshToken() {
-		debug('Llana Plugin: Refreshing token')
+		debug('Refreshing token')
 
-		const url = API_URL + '/auth/refresh'
-		const { access_token, expires_in, refresh_token_expires_in } = await (<any>(
-			await $fetch(url, { ...getFetchOptions(), method: 'POST' })
-		))
-		useCookie(IS_LOGGED_IN_COOKIE_NAME, { maxAge: refresh_token_expires_in }).value = 'true'
-		useCookie(ACCESS_TOKEN_COOKIE_NAME, { maxAge: expires_in }).value = access_token
+		// Implement token refresh lock to prevent multiple concurrent requests
+		if (isRefreshing) {
+			debug('Token refresh already in progress, waiting...')
+			return refreshPromise as Promise<string>
+		}
 
-		debug(`Token refreshed: ${access_token.slice(0, 10)}...`)
-		return access_token
+		isRefreshing = true
+		refreshPromise = (async () => {
+			try {
+				const url = API_URL + '/auth/refresh'
+				const response = await $fetch(url, { ...getFetchOptions(), method: 'POST' })
+
+				if (!response) {
+					throw new Error('No response from refresh token endpoint')
+				}
+
+				const { access_token, refresh_token_expires_in } = response as any
+
+				if (!access_token) {
+					throw new Error('No access token in refresh response')
+				}
+
+				// Set cookies with proper expiration
+				useCookie(IS_LOGGED_IN_COOKIE_NAME, { maxAge: refresh_token_expires_in }).value = 'true'
+
+				debug(`Token refreshed: ${access_token.slice(0, 10)}...`)
+				return access_token
+			} catch (error) {
+				debug('Token refresh failed', error)
+				// Clear cookies on refresh failure
+				useCookie(IS_LOGGED_IN_COOKIE_NAME).value = undefined
+				throw error
+			} finally {
+				isRefreshing = false
+				refreshPromise = null
+			}
+		})()
+
+		return refreshPromise
 	}
 
 	async function $fetchWithInterceptor(url: string, options: any) {
-		debug('Llana Plugin: fetching', url)
+		debug('Fetching ' + url)
 		try {
 			const res = await $fetch(url, options)
-			// syncCookiesFromResponse(res)
 			return res
 		} catch (e: any) {
 			if (e.response?.status === 401) {
@@ -53,23 +83,24 @@ export default defineNuxtPlugin(({ $config }) => {
 						...options,
 						headers: {
 							...options.headers,
+							cookie: undefined, // Remove the old auth cookie header in favor of the new Bearer token
 							Authorization: `Bearer ${access_token}`,
 						},
 					}
-					debug('Retrying with new token', access_token.slice(0, 10) + '...')
+					debug('Retrying with new token:' + access_token.slice(0, 10) + '...')
 					return await $fetch(url, updatedOptions)
 				} catch (refreshError) {
-					handleResponseError(refreshError)
+					debug('Failed to refresh token', refreshError)
+					throw e
 				}
 			} else {
-				handleResponseError(e)
+				throw e
 			}
 		}
 	}
 
 	async function run<T>(options: LlanaRequest<T>): Promise<ListResponse<T> | T | DeletedResponse> {
 		let url: string
-
 		let response: any
 		const currentFetchOptions = getFetchOptions()
 
@@ -118,7 +149,7 @@ export default defineNuxtPlugin(({ $config }) => {
 				try {
 					response = (await $fetchWithInterceptor(API_URL + url, <any>currentFetchOptions)) as ListResponse<T>
 				} catch (e) {
-					handleResponseError(e)
+					throw handleResponseError(e)
 				}
 
 				break
@@ -138,7 +169,7 @@ export default defineNuxtPlugin(({ $config }) => {
 						body: JSON.stringify(options.data),
 					})) as T
 				} catch (e) {
-					handleResponseError(e)
+					throw handleResponseError(e)
 				}
 
 				break
@@ -163,7 +194,7 @@ export default defineNuxtPlugin(({ $config }) => {
 						body: JSON.stringify(options.data),
 					})) as T
 				} catch (e) {
-					handleResponseError(e)
+					throw handleResponseError(e)
 				}
 
 				break
@@ -186,7 +217,7 @@ export default defineNuxtPlugin(({ $config }) => {
 						method: 'DELETE',
 					})) as DeletedResponse
 				} catch (e) {
-					handleResponseError(e)
+					throw handleResponseError(e)
 				}
 
 				break
@@ -214,7 +245,7 @@ export default defineNuxtPlugin(({ $config }) => {
 						method: 'GET',
 					})) as T
 				} catch (e) {
-					handleResponseError(e)
+					throw handleResponseError(e)
 				}
 
 				break
@@ -237,8 +268,12 @@ export default defineNuxtPlugin(({ $config }) => {
 			const response = <any>await $fetch(API_URL + '/auth/login', {
 				...getFetchOptions(),
 				method: 'POST',
-				body: creds,
+				body: JSON.stringify(creds), // Ensure body is properly serialized
 			})
+
+			if (!response || !response.access_token) {
+				throw new Error('Invalid login response')
+			}
 
 			useCookie(IS_LOGGED_IN_COOKIE_NAME, { maxAge: response.refresh_token_expires_in }).value = 'true'
 
@@ -247,9 +282,10 @@ export default defineNuxtPlugin(({ $config }) => {
 				status: 'status' in response ? response?.status : 200,
 			}
 		} catch (e: any) {
+			debug('Login error:', e)
 			return {
 				error: e,
-				status: e.response.status,
+				status: e.response?.status || 500,
 			}
 		}
 	}
@@ -265,70 +301,104 @@ export default defineNuxtPlugin(({ $config }) => {
 			debug('[WebSocket] Subscribe is not available on server side')
 			return () => {}
 		}
+
 		let isManuallyDisconnected = false
 		if (!table) {
 			throw new Error('No table provided for subscription')
 		}
 
 		async function getAccessToken() {
-			const url = API_URL + '/auth/refresh'
-			const { access_token } = await fetch(url, { ...getFetchOptions(), method: 'POST' }).then(res => res.json())
-			debug(`[WebSocket] token fetched: ${access_token.slice(0, 10)}...`)
-			return access_token
+			try {
+				return await refreshToken()
+			} catch (error) {
+				debug(`[WebSocket] Failed to get access token: ${error}`)
+				throw error
+			}
 		}
 
-		debug(`Setting up WS Subscription for ${table}`)
+		debug(`[WebSocket] Setting up WS Subscription for ${table}`)
 
-		const token = await getAccessToken()
+		let token
+		try {
+			token = await getAccessToken()
+		} catch (error) {
+			debug('[WebSocket] Could not initialize subscription due to auth error')
+			throw error
+		}
 
-		const socket = io(API_URL, {
+		const socket = io(LLANA_INSTANCE_URL, {
 			auth: {
 				token: `Bearer ${token}`,
 				'x-llana-table': table,
 			},
 			reconnection: true,
-			reconnectionDelay: 2000, // Start with 2s delay
-			reconnectionDelayMax: 15000, // Increase delay up to 15s
-			reconnectionAttempts: Infinity, // Retry indefinitely
-			autoConnect: false, // Avoid auto-connect issues,
-			transports: ['websocket'], // Disable polling
+			reconnectionDelay: 2000,
+			reconnectionDelayMax: 15000,
+			reconnectionAttempts: Infinity,
+			autoConnect: false,
+			transports: ['websocket'],
+			timeout: 10000, // Add a connection timeout
 		})
 
 		let reconnectTimer: NodeJS.Timeout | null = null
+		let reconnectAttempts = 0
+		const MAX_RECONNECT_ATTEMPTS = 30
 
 		function attemptReconnect() {
 			if (reconnectTimer) clearTimeout(reconnectTimer)
 
-			reconnectTimer = setTimeout(() => {
-				if (socket && !socket.connected) {
-					debug(`[WebSocket] Attempting to reconnect...`)
+			if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+				debug(`[WebSocket] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached.`)
+				return
+			}
+
+			reconnectTimer = setTimeout(async () => {
+				if (socket && !socket.connected && !isManuallyDisconnected) {
+					reconnectAttempts++
+					debug(`[WebSocket] Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`)
+
+					// Try to get a fresh token before reconnecting
+					try {
+						const newToken = await getAccessToken()
+						socket!.io.opts.auth.token = `Bearer ${newToken}`
+					} catch (error) {
+						debug('[WebSocket] Failed to refresh token for reconnection')
+					}
+
 					socket.connect()
 				}
-			}, 5000)
+			}, 5000 * Math.min(reconnectAttempts + 1, 5)) // Exponential backoff, max 25s
 		}
 
 		try {
 			socket.on('connect', () => {
-				debug(`Subscribed to Llana Instance ${table}: ${socket.id}`)
+				debug(`[WebSocket] Subscribed to Llana Instance ${table}: ${socket.id}`)
 				isManuallyDisconnected = false
+				reconnectAttempts = 0 // Reset counter on successful connection
 			})
+
 			socket.on(table, (data: SocketData) => {
-				debug(`New WS Message: ${socket.id}`, {
+				debug(`[WebSocket] New WS Message: ${socket.id}`, {
 					table,
 					...data,
 				})
-				switch (data.type) {
-					case 'INSERT':
-						callbackInsert ? callbackInsert(data) : null
-						break
-					case 'UPDATE':
-						callbackUpdate ? callbackUpdate(data) : null
-						break
-					case 'DELETE':
-						callbackDelete ? callbackDelete(data) : null
-						break
+				try {
+					switch (data.type) {
+						case 'INSERT':
+							if (callbackInsert) callbackInsert(data)
+							break
+						case 'UPDATE':
+							if (callbackUpdate) callbackUpdate(data)
+							break
+						case 'DELETE':
+							if (callbackDelete) callbackDelete(data)
+							break
+					}
+				} catch (error) {
+					debug(`[WebSocket] Error in callback: ${error}`)
 				}
 			})
+
 			socket.on('disconnect', reason => {
 				debug(`[WebSocket] Disconnected: ${reason}. Attempting reconnect...`)
 				if (!isManuallyDisconnected) {
@@ -339,29 +409,35 @@ export default defineNuxtPlugin(({ $config }) => {
 			socket.on('connect_error', async error => {
 				debug(`[WebSocket] Connection error: ${error.message}`)
 
-				if (error.message === 'Token error') {
+				if (error.message?.includes('Token') || error.message?.includes('Authentication')) {
 					try {
 						const newToken = await getAccessToken()
 						socket!.io.opts.auth.token = `Bearer ${newToken}`
 						debug(`[WebSocket] Reconnecting with new token`)
-						socket!.connect()
+						socket.connect()
 					} catch (tokenError: any) {
 						debug(`[WebSocket] Failed to refresh token: ${tokenError.message}`)
 					}
+				} else {
+					attemptReconnect()
 				}
 			})
 
 			socket.on('error', error => {
 				debug(`[WebSocket] Error: ${error.message}`)
 			})
+
 			socket.connect()
 
 			return () => {
+				debug('[WebSocket] Manually closing connection')
 				isManuallyDisconnected = true
+				if (reconnectTimer) clearTimeout(reconnectTimer)
+				socket.disconnect()
 				socket.close()
 			}
 		} catch (e: any) {
-			console.error(e)
+			console.error('[WebSocket] Fatal error:', e)
 			socket.close()
 			throw e
 		}
@@ -385,12 +461,12 @@ export default defineNuxtPlugin(({ $config }) => {
 
 			return result
 		} catch (e: any) {
-			handleResponseError(e)
+			throw handleResponseError(e)
 		}
 	}
 
 	async function Logout(): Promise<void> {
-		debug(`Llana Logging out`)
+		debug(`Logging out`)
 		const url = API_URL + '/auth/logout'
 		await (<any>await $fetch(url, { ...getFetchOptions(), method: 'POST' }))
 		useCookie(IS_LOGGED_IN_COOKIE_NAME).value = undefined
@@ -398,13 +474,19 @@ export default defineNuxtPlugin(({ $config }) => {
 	}
 
 	function handleResponseError(e: any) {
-		console.error(e)
+		debug('API error:', e)
 
 		if (e.response?.status === 401 || e.response?.status === 403) {
-			Logout()
+			// Don't call Logout directly from here to avoid recursion - just reset cookies
+			useCookie(IS_LOGGED_IN_COOKIE_NAME).value = undefined
+
+			// Use setTimeout to avoid immediate navigation during an ongoing request
+			setTimeout(() => {
+				navigateTo('/login', { replace: true })
+			}, 0)
 		}
 
-		throw e as FetchError
+		return e // Return instead of throwing to fix handler pattern
 	}
 
 	function AuthCheck(): boolean {
@@ -430,7 +512,6 @@ export default defineNuxtPlugin(({ $config }) => {
 			llanaInstanceUrl: API_URL,
 			llanaAuthCheck: AuthCheck,
 			llanaAccessToken: refreshToken,
-			// llanaGetAccessToken: getAccessToken,
 		},
 	}
 })
