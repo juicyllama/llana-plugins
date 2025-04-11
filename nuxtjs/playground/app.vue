@@ -12,8 +12,6 @@ const isAuthed = ref<boolean | null>(null)
 const form = ref<{ email: string, password: string }>({ email: '', password: '' })
 const loginError = ref<string | null>(null)
 const profile = ref<Profile | null>(null)
-const headers = ref({ Authorization: '' })
-const clients = ref<ListResponse<Client>>({ data: [], meta: {} })
 
 const newUser = ref<{ email: string, password: string, role: string, firstName: string, lastName: string }>({
 	email: '',

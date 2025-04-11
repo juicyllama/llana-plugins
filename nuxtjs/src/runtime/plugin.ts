@@ -4,47 +4,60 @@ import { io } from 'socket.io-client'
 import type { DeletedResponse, ListResponse, LlanaRequest, SocketData } from './types/index'
 
 const IS_LOGGED_IN_COOKIE_NAME = 'isLlanaLoggedIn'
-
-function setCookie(name: string, value: string | boolean, options: { maxAge?: number } = {}) {
-	let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value.toString())}; path=/;`
-	if (options.maxAge) {
-		cookieString += ` max-age=${options.maxAge};`
-	}
-	document.cookie = cookieString
-}
-
-function removeCookie(name: string) {
-	document.cookie = `${encodeURIComponent(name)}=; path=/; max-age=0;`
-}
+const ACCESS_TOKEN_COOKIE_NAME = 'accessToken'
 
 export default defineNuxtPlugin(({ $config }) => {
 	const LLANA_INSTANCE_URL = <string>$config.public.LLANA_INSTANCE_URL
+	const NUXT_URL = <string>$config.public.NUXT_URL
 	const LLANA_DEBUG = <boolean>Boolean($config.public.LLANA_DEBUG)
+	const API_URL = NUXT_URL ? `${NUXT_URL}/api` : LLANA_INSTANCE_URL
 
-	const fetchOptions: any = {
-		method: 'GET',
-		credentials: 'include', // Added for cookie passing, required for auth and refresh token
-		headers: {
-			'Content-Type': 'application/json',
-		},
+	const getFetchOptions = () => {
+		const opts = {
+			method: 'GET',
+			credentials: 'include', // Added for cookie passing, required for auth and refresh token
+			headers: {
+				'Content-Type': 'application/json',
+				...useRequestHeaders(['cookie']),
+			},
+		}
+		return opts
 	}
 
 	async function refreshToken() {
-		let url = LLANA_INSTANCE_URL + '/auth/refresh'
-		const result = await (<any>await $fetch(url, { ...fetchOptions, method: 'POST' }))
-		debug(`Token refreshed: ${result.access_token.slice(0, 10)}...`)
-		setCookie(IS_LOGGED_IN_COOKIE_NAME, true, { maxAge: result.refresh_token_expires_in }) // 7 days
-		return result.access_token
+		debug('Llana Plugin: Refreshing token')
+
+		const url = API_URL + '/auth/refresh'
+		const { access_token, expires_in, refresh_token_expires_in } = await (<any>(
+			await $fetch(url, { ...getFetchOptions(), method: 'POST' })
+		))
+		useCookie(IS_LOGGED_IN_COOKIE_NAME, { maxAge: refresh_token_expires_in }).value = 'true'
+		useCookie(ACCESS_TOKEN_COOKIE_NAME, { maxAge: expires_in }).value = access_token
+
+		debug(`Token refreshed: ${access_token.slice(0, 10)}...`)
+		return access_token
 	}
 
 	async function $fetchWithInterceptor(url: string, options: any) {
+		debug('Llana Plugin: fetching', url)
 		try {
-			return await $fetch(url, options)
+			const res = await $fetch(url, options)
+			// syncCookiesFromResponse(res)
+			return res
 		} catch (e: any) {
 			if (e.response?.status === 401) {
 				try {
-					await refreshToken() // will set a new token cookie
-					return await $fetch(url, options)
+					const access_token = await refreshToken() // will set a new token cookie
+					// Update options with the new token
+					const updatedOptions = {
+						...options,
+						headers: {
+							...options.headers,
+							Authorization: `Bearer ${access_token}`,
+						},
+					}
+					debug('Retrying with new token', access_token.slice(0, 10) + '...')
+					return await $fetch(url, updatedOptions)
 				} catch (refreshError) {
 					handleResponseError(refreshError)
 				}
@@ -58,6 +71,7 @@ export default defineNuxtPlugin(({ $config }) => {
 		let url: string
 
 		let response: any
+		const currentFetchOptions = getFetchOptions()
 
 		switch (options.type) {
 			case 'LIST':
@@ -102,10 +116,7 @@ export default defineNuxtPlugin(({ $config }) => {
 				debug(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
 				try {
-					response = (await $fetchWithInterceptor(
-						LLANA_INSTANCE_URL + url,
-						<any>fetchOptions,
-					)) as ListResponse<T>
+					response = (await $fetchWithInterceptor(API_URL + url, <any>currentFetchOptions)) as ListResponse<T>
 				} catch (e) {
 					handleResponseError(e)
 				}
@@ -121,8 +132,8 @@ export default defineNuxtPlugin(({ $config }) => {
 				debug(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
 				try {
-					response = (await $fetchWithInterceptor(LLANA_INSTANCE_URL + url, {
-						...fetchOptions,
+					response = (await $fetchWithInterceptor(API_URL + url, {
+						...currentFetchOptions,
 						method: 'POST',
 						body: JSON.stringify(options.data),
 					})) as T
@@ -146,8 +157,8 @@ export default defineNuxtPlugin(({ $config }) => {
 				debug(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
 				try {
-					response = (await $fetchWithInterceptor(LLANA_INSTANCE_URL + url, {
-						...fetchOptions,
+					response = (await $fetchWithInterceptor(API_URL + url, {
+						...currentFetchOptions,
 						method: 'PUT',
 						body: JSON.stringify(options.data),
 					})) as T
@@ -170,8 +181,8 @@ export default defineNuxtPlugin(({ $config }) => {
 				debug(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
 				try {
-					response = (await $fetchWithInterceptor(LLANA_INSTANCE_URL + url, {
-						fetchOptions,
+					response = (await $fetchWithInterceptor(API_URL + url, {
+						...currentFetchOptions,
 						method: 'DELETE',
 					})) as DeletedResponse
 				} catch (e) {
@@ -198,8 +209,8 @@ export default defineNuxtPlugin(({ $config }) => {
 				debug(`Running Llana Request: ${options.type} ${options.table} ${url}`)
 
 				try {
-					response = (await $fetchWithInterceptor(LLANA_INSTANCE_URL + url, {
-						...fetchOptions,
+					response = (await $fetchWithInterceptor(API_URL + url, {
+						...currentFetchOptions,
 						method: 'GET',
 					})) as T
 				} catch (e) {
@@ -212,7 +223,6 @@ export default defineNuxtPlugin(({ $config }) => {
 				throw new Error('Invalid request type')
 		}
 
-		debug(response)
 		return response
 	}
 
@@ -224,12 +234,13 @@ export default defineNuxtPlugin(({ $config }) => {
 		try {
 			debug(`Running Llana Request: '/auth/login'`)
 
-			const response = <any>await $fetch(LLANA_INSTANCE_URL + '/auth/login', {
-				...fetchOptions,
+			const response = <any>await $fetch(API_URL + '/auth/login', {
+				...getFetchOptions(),
 				method: 'POST',
 				body: creds,
 			})
-			setCookie(IS_LOGGED_IN_COOKIE_NAME, true, { maxAge: response.refresh_token_expires_in }) // 7 days
+
+			useCookie(IS_LOGGED_IN_COOKIE_NAME, { maxAge: response.refresh_token_expires_in }).value = 'true'
 
 			return {
 				access_token: response.access_token,
@@ -250,16 +261,27 @@ export default defineNuxtPlugin(({ $config }) => {
 		callbackUpdate?: Function,
 		callbackDelete?: Function,
 	): Promise<() => void> {
+		if (process.server) {
+			debug('[WebSocket] Subscribe is not available on server side')
+			return () => {}
+		}
 		let isManuallyDisconnected = false
 		if (!table) {
 			throw new Error('No table provided for subscription')
 		}
 
+		async function getAccessToken() {
+			const url = API_URL + '/auth/refresh'
+			const { access_token } = await fetch(url, { ...getFetchOptions(), method: 'POST' }).then(res => res.json())
+			debug(`[WebSocket] token fetched: ${access_token.slice(0, 10)}...`)
+			return access_token
+		}
+
 		debug(`Setting up WS Subscription for ${table}`)
 
-		const token = await refreshToken()
+		const token = await getAccessToken()
 
-		const socket = io(LLANA_INSTANCE_URL, {
+		const socket = io(API_URL, {
 			auth: {
 				token: `Bearer ${token}`,
 				'x-llana-table': table,
@@ -319,7 +341,7 @@ export default defineNuxtPlugin(({ $config }) => {
 
 				if (error.message === 'Token error') {
 					try {
-						const newToken = await refreshToken()
+						const newToken = await getAccessToken()
 						socket!.io.opts.auth.token = `Bearer ${newToken}`
 						debug(`[WebSocket] Reconnecting with new token`)
 						socket!.connect()
@@ -353,15 +375,13 @@ export default defineNuxtPlugin(({ $config }) => {
 		try {
 			debug(`Running Llana Request: '/auth/profile'`)
 
-			let url = LLANA_INSTANCE_URL + '/auth/profile'
+			let url = API_URL + '/auth/profile'
 
 			if (options?.relations) {
 				url += `?relations=${options.relations.join(',')}`
 			}
 
-			const result = <T>await (<any>await $fetchWithInterceptor(url, fetchOptions))
-
-			debug(result)
+			const result = <T>await (<any>await $fetchWithInterceptor(url, getFetchOptions()))
 
 			return result
 		} catch (e: any) {
@@ -371,9 +391,9 @@ export default defineNuxtPlugin(({ $config }) => {
 
 	async function Logout(): Promise<void> {
 		debug(`Llana Logging out`)
-		let url = LLANA_INSTANCE_URL + '/auth/logout'
-		await (<any>await $fetch(url, { ...fetchOptions, method: 'POST' }))
-		removeCookie(IS_LOGGED_IN_COOKIE_NAME)
+		const url = API_URL + '/auth/logout'
+		await (<any>await $fetch(url, { ...getFetchOptions(), method: 'POST' }))
+		useCookie(IS_LOGGED_IN_COOKIE_NAME).value = undefined
 		navigateTo('/login', { replace: true })
 	}
 
@@ -388,17 +408,15 @@ export default defineNuxtPlugin(({ $config }) => {
 	}
 
 	function AuthCheck(): boolean {
-		const isLlanaLoggedIn = useCookie('isLlanaLoggedIn')?.value
-		return !!isLlanaLoggedIn
+		const isLlanaLoggedIn = !!useCookie(IS_LOGGED_IN_COOKIE_NAME).value
+		debug('AuthCheck:', isLlanaLoggedIn)
+		return isLlanaLoggedIn
 	}
 
-	function debug(msg: string, props?: any) {
+	function debug(...args: any[]) {
 		if (LLANA_DEBUG) {
-			if (typeof msg === 'object') {
-				console.log('[LANA]', msg)
-			} else {
-				console.log('[LANA]' + msg, props)
-			}
+			args[0] = '[LLANA] ' + args[0]
+			console.log(...args)
 		}
 	}
 
@@ -409,9 +427,10 @@ export default defineNuxtPlugin(({ $config }) => {
 			llanaLogout: Logout,
 			llanaGetProfile: GetProfile,
 			llanaSubscribe: Subscribe,
-			llanaInstanceUrl: LLANA_INSTANCE_URL,
+			llanaInstanceUrl: API_URL,
 			llanaAuthCheck: AuthCheck,
 			llanaAccessToken: refreshToken,
+			// llanaGetAccessToken: getAccessToken,
 		},
 	}
 })
